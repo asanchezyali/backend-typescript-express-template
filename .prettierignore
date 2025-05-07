@@ -1,1 +1,4 @@
+distnode_modules
 dist
+build
+coverage
