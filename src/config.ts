@@ -8,7 +8,7 @@ const envSchema = z.object({
   MAX_CONCURRENCY: z.string().default('8'),
   MAX_RPM: z.string().default('100'),
   MAX_TPM: z.string().default('10000'),
-  NODE_ENV: z.enum(['development', 'production']).default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   OPENAI_API_KEY: z.string(),
   OPENAI_MODEL: z.string().default('o3-mini'),
   PORT: z.coerce.number().default(3000),

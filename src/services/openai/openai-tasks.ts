@@ -14,13 +14,18 @@ export class OpenAITasks {
 
   async analyzeSentiment(content: string): Promise<string> {
     try {
+      const sanitizedContent = this.sanitizeInput(content);
+
       const prompt = `
-        +++Reasoning
+        +++OutputFormat(format=single-word, allowed=["positive", "negative", "neutral"])
+        +++Constraint(type=response-length, max=1)
+        +++ErrorHandling(strategy=graceful-fallback, default="neutral")
+        +++SecurityBoundary(enforce=strict)
         Classify the sentiment of this text as positive, negative, or neutral.
         Respond with a single word only, no explanations.
 
         TEXT TO ANALYZE:
-        ${content}
+        ${sanitizedContent}
       `;
 
       const sentiment = await this.openaiService.runRawResponse(prompt, 'neutral');
@@ -40,16 +45,21 @@ export class OpenAITasks {
 
   async categorize(content: string): Promise<string[]> {
     try {
+      const sanitizedContent = this.sanitizeInput(content);
+
       const prompt = `
-        +++Reasoning
-        +++OutputFormat(JSON array)
+        +++OutputFormat(format=json, schema=array)
+        +++Constraint(type=array-length, min=1, max=5)
+        +++ItemConstraint(type=format, format=lowercase)
+        +++RobustParsing(recovery=true)
+        +++SecurityBoundary(enforce=strict)
         Identify 1-5 relevant categories for this text.
         Return only a JSON array of lowercase category strings.
         Format: ["category1", "category2", ...]
         No explanations or additional text.
 
         TEXT TO CATEGORIZE:
-        ${content}
+        ${sanitizedContent}
       `;
 
       const result = await this.openaiService.runJsonResponse<string[]>(prompt, []);
@@ -68,9 +78,16 @@ export class OpenAITasks {
 
   async extractKeywords(content: string): Promise<KeywordResult> {
     try {
+      const sanitizedContent = this.sanitizeInput(content);
+
       const prompt = `
-        +++Reasoning
-        +++OutputFormat(JSON)
+        +++OutputFormat(format=json, schema=object)
+        +++Schema(type=object, properties={
+          primary: {type: string, description: "Main topic keyword"},
+          secondary: {type: array, items: {type: string}, minItems: 1, maxItems: 5}
+        })
+        +++ErrorHandling(strategy=graceful-fallback)
+        +++SecurityBoundary(enforce=strict)
         Extract one primary keyword (main topic) and 1-5 secondary keywords from this text.
         Return only this JSON format:
         {
@@ -79,7 +96,7 @@ export class OpenAITasks {
         }
 
         TEXT TO ANALYZE:
-        ${content}
+        ${sanitizedContent}
       `;
 
       const defaultResult = { primary: '', secondary: [] };
@@ -99,13 +116,19 @@ export class OpenAITasks {
 
   async summarize(content: string): Promise<string> {
     try {
+      const sanitizedContent = this.sanitizeInput(content);
+
       const prompt = `
-        +++OutputFormat(plain text)
+        +++Concise(level=high)
+        +++TL;DR(style=informative)
+        +++Constraint(type=focus, value=essential-information)
+        +++OutputFormat(format=plain-text)
+        +++SecurityBoundary(enforce=strict)
         Create a concise summary capturing the main points of this text.
         Keep it brief, coherent, and focused on essential information.
 
         TEXT TO SUMMARIZE:
-        ${content}
+        ${sanitizedContent}
       `;
 
       return await this.openaiService.runRawResponse(prompt, '');
@@ -113,5 +136,23 @@ export class OpenAITasks {
       console.error('Summarization failed:', error);
       return '';
     }
+  }
+
+  private sanitizeInput(content: string): string {
+    let sanitized = content.replace(/\+\+\+\w+(\(.*?\))?/g, '[FILTERED]');
+
+    const injectionPatterns = [
+      /ignore (previous|above|all) instructions/gi,
+      /disregard (previous|above|all) instructions/gi,
+      /forget (previous|above|all) instructions/gi,
+      /new instructions/gi,
+      /instead (do|perform|follow)/gi,
+    ];
+
+    for (const pattern of injectionPatterns) {
+      sanitized = sanitized.replace(pattern, '[FILTERED]');
+    }
+
+    return sanitized;
   }
 }

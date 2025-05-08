@@ -164,7 +164,7 @@ export const swaggerDocs = {
   servers: [
     {
       description: 'API Version 1',
-      url: '/',
+      url: '/api',
     },
   ],
 };

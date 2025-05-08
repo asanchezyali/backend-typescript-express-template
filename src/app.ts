@@ -14,6 +14,6 @@ app.use(express.json());
 app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerSpec));
 
 // API routes with versioning
-app.use('/', analyzeRoutes);
+app.use('/api', analyzeRoutes);
 
 export default app;
