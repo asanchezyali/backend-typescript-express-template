@@ -40,8 +40,6 @@ export const AnalyzeController = {
       const analysis = await contentAnalyzerService.analyzeContent(contentToAnalyze);
       const formattedAnalysis = {
         ...analysis,
-        categories: Array.isArray(analysis.categories) ? analysis.categories : [analysis.categories],
-        summary: Array.isArray(analysis.summary) ? analysis.summary.join(' ') : analysis.summary,
       };
       res.status(200).json({
         data: formattedAnalysis,

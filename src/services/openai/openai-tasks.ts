@@ -15,53 +15,47 @@ export class OpenAITasks {
   async analyzeSentiment(content: string) {
     const prompt = `
       +++Reasoning
-      You are a sentiment analysis expert. Your task is to determine the sentiment of the text provided.
-      Sentiment can be classified as:
-      - Positive: Indicates a favorable or optimistic sentiment.
-      - Negative: Indicates an unfavorable or pessimistic sentiment.
-      - Neutral: Indicates a sentiment that is neither positive nor negative.
-      Your task is to analyze the text and classify it into one of these three categories.
-      Respond with a single word, with no explanations or extra punctuation.
+      Classify the sentiment of this text as positive, negative, or neutral.
+      Respond with a single word only, no explanations.
 
       TEXT TO ANALYZE:
       ${content}
     `;
-    const sentiment = await this.limiter(() =>
-      retryWithBackoff(async () => {
-        const rawResponse = await this.openaiService.run<string>(prompt, 'neutral');
-        console.log('Raw sentiment response:', rawResponse);
-        return rawResponse;
-      }),
-    );
-    const normalizedSentiment = sentiment.trim().toLowerCase();
-    if (!['negative', 'neutral', 'positive'].includes(normalizedSentiment)) {
-      console.warn(`Invalid sentiment received: "${sentiment}", using "neutral"`);
-      return 'neutral';
+    try {
+      const result = await this.limiter(() =>
+        retryWithBackoff(async () => {
+          const sentiment = await this.openaiService.runRawResponse(prompt, 'neutral');
+          const normalizedSentiment = sentiment.trim().toLowerCase();
+          if (!['negative', 'neutral', 'positive'].includes(normalizedSentiment)) {
+            console.warn(`Invalid sentiment received: "${normalizedSentiment}", using "neutral"`);
+            return 'neutral';
+          }
+          return normalizedSentiment;
+        }),
+      );
+
+      return result;
+    } catch (error) {
+      console.error('Sentiment analysis error:', error);
+      throw error;
     }
-    return normalizedSentiment;
   }
 
   async categorize(content: string) {
     const prompt = `
       +++Reasoning
       +++OutputFormat(JSON array)
-      You are a content categorization expert. Your task is to analyze the text provided and categorize it into relevant topics.
-      The categories should be concise names that describe the main topic.
-      The categories should be in a JSON array format, with each category being a string.
-      The categories should be relevant to the content and should not include any additional explanations or text.
-      The categories should be in lowercase and should not include any special characters or numbers.
-      Return EXACTLY between 1 and 5 categories as a JSON array of strings.
-      The categories should be concise names that describe the main topic.
-      The response format must be only: ["Category1", "Category2", ...]
-      Do not include any additional explanation, just the JSON array.
+      Identify 1-5 relevant categories for this text.
+      Return only a JSON array of lowercase category strings.
+      Format: ["category1", "category2", ...]
+      No explanations or additional text.
 
       TEXT TO CATEGORIZE:
       ${content}
     `;
     const result = await this.limiter(() =>
       retryWithBackoff(async () => {
-        const rawResponse = await this.openaiService.run<string[]>(prompt, []);
-        console.log('Raw categories response:', rawResponse);
+        const rawResponse = await this.openaiService.runJsonResponse<string[]>(prompt, []);
         return rawResponse;
       }),
     );
@@ -76,17 +70,12 @@ export class OpenAITasks {
     const prompt = `
       +++Reasoning
       +++OutputFormat(JSON)
-      You are a keyword extraction expert. Your task is to analyze the text provided and extract the main keywords.
-      The primary keyword should represent the main topic of the text.
-      The secondary keywords should represent important concepts related to the primary keyword.
-      The primary keyword should be a single word or a short phrase.
-      The secondary keywords should be a list of 1 to 5 words or short phrases.
-      The response format must be a JSON object with the following structure:
+      Extract one primary keyword (main topic) and 1-5 secondary keywords from this text.
+      Return only this JSON format:
       {
         "primary": "main keyword",
-        "secondary": ["secondary keyword 1", "secondary keyword 2", ...]
-      }  
-      Do not include explanations, just the JSON object.
+        "secondary": ["keyword1", "keyword2", ...]
+      }
 
       TEXT TO ANALYZE:
       ${content}
@@ -94,11 +83,10 @@ export class OpenAITasks {
     const defaultResult = { primary: '', secondary: [] };
     const result = await this.limiter(() =>
       retryWithBackoff(async () => {
-        const rawResponse = await this.openaiService.run<{ primary: string; secondary: string[] }>(
+        const rawResponse = await this.openaiService.runJsonResponse<{ primary: string; secondary: string[] }>(
           prompt,
           defaultResult,
         );
-        console.log('Raw keywords response:', rawResponse);
         return rawResponse;
       }),
     );
@@ -110,23 +98,26 @@ export class OpenAITasks {
   };
 
   async summarize(content: string) {
-    console.log('Content to summarize:', content);
     const prompt = `
       +++OutputFormat(plain text)
-      You are a summarization expert. Your task is to summarize the text provided.
-      The summary should be concise and capture the main points of the text.
-      The summary should be in plain text format, with no additional explanations or text.
-      The summary should be coherent and easy to read.
-    
+      Create a concise summary capturing the main points of this text.
+      Keep it brief, coherent, and focused on essential information.
+
       TEXT TO SUMMARIZE:
       ${content}
     `;
-    return this.limiter(() =>
-      retryWithBackoff(async () => {
-        const rawResponse = await this.openaiService.run<string>(prompt, '');
-        console.log('Raw summary response:', rawResponse);
-        return rawResponse;
-      }),
-    );
+    try {
+      const result = await this.limiter(() =>
+        retryWithBackoff(async () => {
+          const rawResponse = await this.openaiService.runRawResponse(prompt, '');
+          return rawResponse;
+        }),
+      );
+
+      return result;
+    } catch (error) {
+      console.error('Summarization error:', error);
+      throw error;
+    }
   }
 }
