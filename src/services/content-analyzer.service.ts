@@ -9,10 +9,10 @@ export class ContentAnalyzerService {
 
   async analyzeContent(content: string) {
     const [categories, summary, keywords, sentiment] = await Promise.all([
-      this.openaiTasks.analyzeSentiment(content),
       this.openaiTasks.categorize(content),
-      this.openaiTasks.extractKeywords(content),
       this.openaiTasks.summarize(content),
+      this.openaiTasks.extractKeywords(content),
+      this.openaiTasks.analyzeSentiment(content),
     ]);
 
     return {

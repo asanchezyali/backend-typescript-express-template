@@ -1,19 +1,21 @@
 export function safeJsonParse<T>(jsonString: string, fallback: T): T {
-  let initialParseError: Error | null = null;
   try {
     return JSON.parse(jsonString) as T;
   } catch (error) {
-    initialParseError = error as Error;
+    if (error instanceof SyntaxError) {
+      console.error('JSON parsing error:', error);
+    } else {
+      console.error('Unexpected error:', error);
+    }
     try {
       const cleaned = jsonString
         .replace(/```json/g, '')
         .replace(/```/g, '')
         .trim();
       return JSON.parse(cleaned) as T;
-    } catch (innerError) {
-      console.error('Error parsing JSON (attempt 1, without cleaning):', initialParseError);
-      console.error('Error parsing JSON (attempt 2, after cleaning):', innerError);
-      console.error('Returning fallback value.');
+    } catch {
+      const preview = jsonString.slice(0, 50) + (jsonString.length > 50 ? '...' : '');
+      console.debug(`Notice: Using fallback value. Content preview: "${preview}"`);
       return fallback;
     }
   }

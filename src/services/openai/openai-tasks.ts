@@ -14,20 +14,24 @@ export class OpenAITasks {
 
   async analyzeSentiment(content: string) {
     const prompt = `
-      Analyze the overall sentiment of the following text.
-
-      Your answer must be EXACTLY ONE of these three words:
-      - "positive"
-      - "negative" 
-      - "neutral"
-
+      +++Reasoning
+      You are a sentiment analysis expert. Your task is to determine the sentiment of the text provided.
+      Sentiment can be classified as:
+      - Positive: Indicates a favorable or optimistic sentiment.
+      - Negative: Indicates an unfavorable or pessimistic sentiment.
+      - Neutral: Indicates a sentiment that is neither positive nor negative.
+      Your task is to analyze the text and classify it into one of these three categories.
       Respond with a single word, with no explanations or extra punctuation.
 
       TEXT TO ANALYZE:
       ${content}
     `;
     const sentiment = await this.limiter(() =>
-      retryWithBackoff(() => this.openaiService.run<string>(prompt, 'neutral')),
+      retryWithBackoff(async () => {
+        const rawResponse = await this.openaiService.run<string>(prompt, 'neutral');
+        console.log('Raw sentiment response:', rawResponse);
+        return rawResponse;
+      }),
     );
     const normalizedSentiment = sentiment.trim().toLowerCase();
     if (!['negative', 'neutral', 'positive'].includes(normalizedSentiment)) {
@@ -39,7 +43,13 @@ export class OpenAITasks {
 
   async categorize(content: string) {
     const prompt = `
-      Analyze the following text and determine the most relevant categories it belongs to.
+      +++Reasoning
+      +++OutputFormat(JSON array)
+      You are a content categorization expert. Your task is to analyze the text provided and categorize it into relevant topics.
+      The categories should be concise names that describe the main topic.
+      The categories should be in a JSON array format, with each category being a string.
+      The categories should be relevant to the content and should not include any additional explanations or text.
+      The categories should be in lowercase and should not include any special characters or numbers.
       Return EXACTLY between 1 and 5 categories as a JSON array of strings.
       The categories should be concise names that describe the main topic.
       The response format must be only: ["Category1", "Category2", ...]
@@ -48,7 +58,13 @@ export class OpenAITasks {
       TEXT TO CATEGORIZE:
       ${content}
     `;
-    const result = await this.limiter(() => retryWithBackoff(() => this.openaiService.run<string[]>(prompt, [])));
+    const result = await this.limiter(() =>
+      retryWithBackoff(async () => {
+        const rawResponse = await this.openaiService.run<string[]>(prompt, []);
+        console.log('Raw categories response:', rawResponse);
+        return rawResponse;
+      }),
+    );
     if (!Array.isArray(result) || result.length === 0 || result.length > 5) {
       console.warn('Invalid category format, using default value');
       return ['Uncategorized'];
@@ -58,16 +74,18 @@ export class OpenAITasks {
 
   extractKeywords = async (content: string) => {
     const prompt = `
-      Analyze the following text and extract:
-      1. A single primary keyword that represents the main topic.
-      2. Between 1 and 5 secondary keywords that represent important concepts.
-
-      Return only a JSON object with the following exact format:
+      +++Reasoning
+      +++OutputFormat(JSON)
+      You are a keyword extraction expert. Your task is to analyze the text provided and extract the main keywords.
+      The primary keyword should represent the main topic of the text.
+      The secondary keywords should represent important concepts related to the primary keyword.
+      The primary keyword should be a single word or a short phrase.
+      The secondary keywords should be a list of 1 to 5 words or short phrases.
+      The response format must be a JSON object with the following structure:
       {
         "primary": "main keyword",
         "secondary": ["secondary keyword 1", "secondary keyword 2", ...]
-      }
-
+      }  
       Do not include explanations, just the JSON object.
 
       TEXT TO ANALYZE:
@@ -75,7 +93,14 @@ export class OpenAITasks {
     `;
     const defaultResult = { primary: '', secondary: [] };
     const result = await this.limiter(() =>
-      retryWithBackoff(() => this.openaiService.run<{ primary: string; secondary: string[] }>(prompt, defaultResult)),
+      retryWithBackoff(async () => {
+        const rawResponse = await this.openaiService.run<{ primary: string; secondary: string[] }>(
+          prompt,
+          defaultResult,
+        );
+        console.log('Raw keywords response:', rawResponse);
+        return rawResponse;
+      }),
     );
     if (!result.primary || !Array.isArray(result.secondary)) {
       console.warn('Invalid keyword format, using default value');
@@ -85,13 +110,23 @@ export class OpenAITasks {
   };
 
   async summarize(content: string) {
+    console.log('Content to summarize:', content);
     const prompt = `
-      Provide a concise and clear summary of the following text, capturing the main points 
-      and preserving the essential meaning. The summary should be coherent and easy to read.
-
+      +++OutputFormat(plain text)
+      You are a summarization expert. Your task is to summarize the text provided.
+      The summary should be concise and capture the main points of the text.
+      The summary should be in plain text format, with no additional explanations or text.
+      The summary should be coherent and easy to read.
+    
       TEXT TO SUMMARIZE:
       ${content}
     `;
-    return this.limiter(() => retryWithBackoff(() => this.openaiService.run<string>(prompt, '')));
+    return this.limiter(() =>
+      retryWithBackoff(async () => {
+        const rawResponse = await this.openaiService.run<string>(prompt, '');
+        console.log('Raw summary response:', rawResponse);
+        return rawResponse;
+      }),
+    );
   }
 }
