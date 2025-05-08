@@ -1,13 +1,7 @@
 import express, { Request, Response } from 'express';
-import pLimit from 'p-limit';
 import config from '#config.js';
-import { OpenAIService } from '#services/openai-services.js';
-import { retryWithBackoff } from '#utils/retry-utils.js';
 import { swaggerSpec } from '#swagger.js';
 import swaggerUI from 'swagger-ui-express';
-
-const openaiService = new OpenAIService(config);
-const limiter = pLimit(config.maxConcurrency);
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
