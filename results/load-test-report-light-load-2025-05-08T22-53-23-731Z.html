@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Load Test Report - light-load</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+      h1 {
+        color: #2c3e50;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+      }
+      .summary {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      .metric {
+        margin-bottom: 20px;
+      }
+      .metric h3 {
+        margin-bottom: 10px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 30px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 8px;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+      .chart {
+        margin-bottom: 30px;
+        height: 300px;
+      }
+      .footer {
+        margin-top: 50px;
+        color: #7f8c8d;
+        font-size: 0.9em;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Load Test Report</h1>
+
+      <div class="summary">
+        <h2>Test Configuration</h2>
+        <p><strong>Scenario:</strong> light-load</p>
+        <p><strong>Connections:</strong> 5</p>
+        <p><strong>Duration:</strong> 10 seconds</p>
+        <p><strong>Pipelining:</strong> 1</p>
+        <p><strong>Date:</strong> 5/8/2025, 5:53:23 PM</p>
+      </div>
+
+      <div class="metric">
+        <h2>Performance Summary</h2>
+        <table>
+          <tr>
+            <th>Metric</th>
+            <th>Value</th>
+          </tr>
+          <tr>
+            <td>Average Requests/sec</td>
+            {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
+            <td>1228.91</td>
+          </tr>
+          <tr>
+            <td>Average Latency (ms)</td>
+            {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+            */}
+            <td>3.46</td>
+          </tr>
+          <tr>
+            <td>Max Latency (ms)</td>
+            {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
+            <td>886</td>
+          </tr>
+          <tr>
+            <td>Min Latency (ms)</td>
+            {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
+            <td>1</td>
+          </tr>
+          <tr>
+            <td>Total Requests</td>
+            {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
+            <td>12289</td>
+          </tr>
+          <tr>
+            <td>Successful Responses (2xx)</td>
+            {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
+            <td>12289</td>
+          </tr>
+          <tr>
+            <td>Error Responses (non-2xx)</td>
+            {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
+            <td>0</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="metric">
+        <h2>Latency Distribution</h2>
+        <table>
+          <tr>
+            <th>Percentile</th>
+            <th>Value (ms)</th>
+          </tr>
+          <tr>
+            <td>50%</td>
+            {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+            */}
+            <td>3.00</td>
+          </tr>
+          <tr>
+            <td>75%</td>
+            {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+            */}
+            <td>4.00</td>
+          </tr>
+          <tr>
+            <td>90%</td>
+            {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+            */}
+            <td>4.00</td>
+          </tr>
+          <tr>
+            <td>99%</td>
+            {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint.no-unsafe-call
+            */}
+            <td>5.00</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="footer">
+        <p>Report generated on 2025-05-08T22:53:23.734Z • GrowthX App</p>
+      </div>
+    </div>
+  </body>
+</html>

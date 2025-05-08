@@ -1,0 +1,132 @@
+import autocannon, { printResult } from 'autocannon';
+import { join } from 'node:path';
+
+// Set up environment variables before importing app
+process.env.OPENAI_API_KEY = process.env.OPENAI_API_KEY ?? 'test-api-key';
+process.env.NODE_ENV = 'test';
+
+const PORT = 3456;
+const URL = `http://localhost:${String(PORT)}/api/analyze`;
+
+// Sample content for testing
+const sampleContent = [
+  {
+    content: 'Companies need effective growth strategies to expand market share and increase revenue.',
+    title: 'Growth Strategies',
+  },
+  {
+    content: 'Data-driven marketing decisions lead to better customer engagement and ROI.',
+    title: 'Marketing Insights',
+  },
+  {
+    content: 'Building strategic partnerships can accelerate business growth and open new markets.',
+    title: 'Business Development',
+  },
+];
+
+// ES modules equivalent of require.main === module
+const isMainModule = import.meta.url === `file://${process.argv[1]}`;
+
+// Only start the server if this file is run directly
+if (isMainModule) {
+  // Dynamic import to avoid hoisting issues with environment variables
+  void import('../../app.js').then(({ default: app }) => {
+    // Start the server
+    const server = app.listen(PORT, () => {
+      console.log(`Server started on port ${String(PORT)} for load testing`);
+
+      // Run the load test
+      void runLoadTest().then(() => {
+        // Close the server when done
+        server.close();
+      });
+    });
+  });
+}
+
+/**
+ * Run load test on the analyze endpoint
+ */
+async function runLoadTest(connections = 10, duration = 10, pipelining = 1, timeout = 20): Promise<void> {
+  console.log(`Starting load test with ${String(connections)} concurrent connections for ${String(duration)} seconds`);
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+  const instance = autocannon({
+    connections,
+    duration,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    pipelining,
+    requests: [
+      {
+        body: JSON.stringify(sampleContent[0]),
+        method: 'POST',
+        onResponse: (status: number, body: string) => {
+          if (status !== 200) {
+            console.error(`Error response: ${String(status)}, ${String(body)}`);
+          }
+        },
+        path: '/api/analyze',
+      },
+      {
+        body: JSON.stringify(sampleContent[1]),
+        method: 'POST',
+        path: '/api/analyze',
+      },
+      {
+        body: JSON.stringify(sampleContent[2]),
+        method: 'POST',
+        path: '/api/analyze',
+      },
+    ],
+    timeout,
+    url: URL,
+  });
+
+  // Print progress to console
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if (instance && typeof instance.track === 'function') {
+    instance.track(instance, { renderProgressBar: true });
+  }
+
+  // When the test finishes, print results
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if (instance && typeof instance.on === 'function') {
+    instance.on('done', (results) => {
+      printResult(results);
+
+      // Save results to JSON file
+      const resultsFolder = join(process.cwd(), 'results');
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const resultsPath = join(resultsFolder, `analyze-load-test-${timestamp}.json`);
+
+      // Create results folder if it doesn't exist
+      void import('node:fs').then(({ promises: fs }) => {
+        void fs
+          .mkdir(resultsFolder, { recursive: true })
+          .then(() => fs.writeFile(resultsPath, JSON.stringify(results, null, 2)))
+          .then(() => {
+            console.log(`Results saved to ${resultsPath}`);
+          })
+          .catch((err: unknown) => {
+            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+            console.error(`Error saving results: ${errorMessage}`);
+          });
+      });
+    });
+  }
+
+  return new Promise<void>((resolve) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (instance && typeof instance.on === 'function') {
+      instance.on('done', () => {
+        resolve();
+      });
+    } else {
+      resolve();
+    }
+  });
+}
+
+export { runLoadTest };
