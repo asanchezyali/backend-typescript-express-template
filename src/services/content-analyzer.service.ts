@@ -1,35 +1,26 @@
-import { summarize, categorize, extractKeywords, analyzeSentiment } from './openai-tasks.js';
+import { OpenAITasks } from './openai/openai-tasks.js';
 
-export interface ContentAnalysis {
-  summary: string;
-  categories: string[];
-  primaryKeyword: string;
-  secondaryKeywords: string[];
-  sentiment: string;
-}
+export class ContentAnalyzerService {
+  private openaiTasks: OpenAITasks;
 
-export async function analyzeContent(content: string): Promise<ContentAnalysis> {
-  try {
-    const [summary, categories, keywords, sentiment] = await Promise.all([
-      summarize(content),
-      categorize(content),
-      extractKeywords(content),
-      analyzeSentiment(content),
+  constructor() {
+    this.openaiTasks = new OpenAITasks();
+  }
+
+  async analyzeContent(content: string) {
+    const [categories, summary, keywords, sentiment] = await Promise.all([
+      this.openaiTasks.analyzeSentiment(content),
+      this.openaiTasks.categorize(content),
+      this.openaiTasks.extractKeywords(content),
+      this.openaiTasks.summarize(content),
     ]);
 
     return {
-      summary,
       categories,
       primaryKeyword: keywords.primary,
       secondaryKeywords: keywords.secondary,
       sentiment,
+      summary,
     };
-  } catch (error) {
-    console.error('Content analysis failed:', error);
-    if (error instanceof Error) {
-      throw new Error('Failed to analyze content: ' + error.message);
-    } else {
-      throw new Error('Failed to analyze content: Unknown error');
-    }
   }
 }

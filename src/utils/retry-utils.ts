@@ -1,13 +1,11 @@
-export async function retryWithBackoff<T>(operation: () => Promise<T>, maxRetries: number = 3): Promise<T> {
+export async function retryWithBackoff<T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> {
   let retryCount = 0;
 
-  while (true) {
+  while (retryCount < maxRetries) {
     try {
       return await operation();
     } catch (error) {
-      retryCount++;
-
-      if (retryCount >= maxRetries) {
+      if (retryCount >= maxRetries - 1) {
         throw error;
       }
 
@@ -16,13 +14,16 @@ export async function retryWithBackoff<T>(operation: () => Promise<T>, maxRetrie
 
       if (isRateLimitError) {
         const backoffTime = Math.min(2 ** retryCount * 1000, 15000);
-        console.warn(`Retry ${retryCount} after ${backoffTime}ms due to rate limiting`);
+        console.warn(`Retry ${String(retryCount + 1)} after ${String(backoffTime)}ms due to rate limiting`);
         await new Promise((resolve) => setTimeout(resolve, backoffTime));
+        retryCount++;
       } else {
         throw error;
       }
     }
   }
+
+  throw new Error('Max retries reached');
 }
 
 export default { retryWithBackoff };

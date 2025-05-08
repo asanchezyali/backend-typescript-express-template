@@ -1,9 +1,9 @@
 export function safeJsonParse<T>(jsonString: string, fallback: T): T {
-  let initialParseError: any = null;
+  let initialParseError: Error | null = null;
   try {
     return JSON.parse(jsonString) as T;
   } catch (error) {
-    initialParseError = error;
+    initialParseError = error as Error;
     try {
       const cleaned = jsonString
         .replace(/```json/g, '')

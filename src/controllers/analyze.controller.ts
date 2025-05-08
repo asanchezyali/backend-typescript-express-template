@@ -1,45 +1,66 @@
-import { Request, Response } from 'express';
-import { AnalyzeRequest, AnalysisResponse, ErrorResponse } from '#types/api.types.js';
-import { analyzeContent } from '#services/content-analyzer.service.js';
 import config from '#config.js';
+import { ContentAnalyzerService } from '#services/content-analyzer.service.js';
+import { AnalysisResponse, AnalyzeRequest, ErrorResponse } from '#types/api.types.js';
+import { Request, Response } from 'express';
 
-export class AnalyzeController {
-  public static analyze = async (
-    req: Request<{}, {}, AnalyzeRequest>,
+const ERROR_MESSAGES = {
+  MISSING_CONTENT: 'Missing required field: content',
+  UNKNOWN_ERROR: 'Unknown error',
+} as const;
+
+const API_STATUS = {
+  ERROR: 'error',
+  SUCCESS: 'success',
+} as const;
+
+interface HealthResponse {
+  model: string;
+  status: 'ok';
+  timestamp: string;
+}
+
+const contentAnalyzerService = new ContentAnalyzerService();
+
+export const AnalyzeController = {
+  analyze: async (
+    req: Request<Record<string, never>, unknown, AnalyzeRequest>,
     res: Response<AnalysisResponse | ErrorResponse>,
   ): Promise<void> => {
     try {
-      const { title, content } = req.body as AnalyzeRequest;
-
+      const { content, title } = req.body;
       if (!content) {
         res.status(400).json({
-          status: 'error',
-          message: 'Missing required field: content',
-        } as ErrorResponse);
+          message: ERROR_MESSAGES.MISSING_CONTENT,
+          status: API_STATUS.ERROR,
+        });
         return;
       }
 
       const contentToAnalyze = title ? `${title}\n\n${content}` : content;
-      const analysis = await analyzeContent(contentToAnalyze);
-
+      const analysis = await contentAnalyzerService.analyzeContent(contentToAnalyze);
+      const formattedAnalysis = {
+        ...analysis,
+        categories: Array.isArray(analysis.categories) ? analysis.categories : [analysis.categories],
+        summary: Array.isArray(analysis.summary) ? analysis.summary.join(' ') : analysis.summary,
+      };
       res.status(200).json({
-        status: 'success',
-        data: analysis,
-      } as AnalysisResponse);
-    } catch (error) {
+        data: formattedAnalysis,
+        status: API_STATUS.SUCCESS,
+      });
+    } catch (error: unknown) {
       console.error('Analysis error:', error);
       res.status(500).json({
-        status: 'error',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      } as ErrorResponse);
+        message: error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR,
+        status: API_STATUS.ERROR,
+      });
     }
-  };
+  },
 
-  public static health(req: Request, res: Response) {
+  health: (req: Request, res: Response<HealthResponse>): void => {
     res.json({
-      status: 'ok',
       model: config.model,
+      status: 'ok',
       timestamp: new Date().toISOString(),
     });
-  }
-}
+  },
+};

@@ -1,20 +1,20 @@
-export interface AnalyzeRequest {
-  title?: string;
-  content: string;
-}
-
 export interface AnalysisResponse {
-  status: 'success';
   data: {
-    summary: string;
     categories: string[];
     primaryKeyword: string;
     secondaryKeywords: string[];
     sentiment: string;
+    summary: string;
   };
+  status: 'success';
+}
+
+export interface AnalyzeRequest {
+  content: string;
+  title?: string;
 }
 
 export interface ErrorResponse {
-  status: 'error';
   message: string;
+  status: 'error';
 }

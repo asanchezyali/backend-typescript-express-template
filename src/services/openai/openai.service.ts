@@ -1,29 +1,29 @@
-import { OpenAI } from 'openai';
-import { RateLimiterMemory } from 'rate-limiter-flexible';
-import { Config } from '#config.js';
+import config from '#config.js';
 import { safeJsonParse } from '#utils/json-utils.js';
 import { promiseWithTimeout } from '#utils/timeout-utils.js';
+import { OpenAI } from 'openai';
+import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 export class OpenAIService {
+  private model: string;
   private openai: OpenAI;
+  private requestTimeout: number;
   private rpmLimiter: RateLimiterMemory;
   private tpmLimiter: RateLimiterMemory;
-  private model: string;
-  private requestTimeout: number;
 
-  constructor(config: Config) {
+  constructor() {
     this.openai = new OpenAI({
       apiKey: config.apiKey,
     });
     this.model = config.model;
     this.requestTimeout = config.requestTimeout;
     this.rpmLimiter = new RateLimiterMemory({
-      points: config.maxRPM,
       duration: 60,
+      points: config.maxRPM,
     });
     this.tpmLimiter = new RateLimiterMemory({
-      points: config.maxTPM,
       duration: 60,
+      points: config.maxTPM,
     });
   }
 
@@ -33,8 +33,8 @@ export class OpenAIService {
 
     const response = await promiseWithTimeout(
       this.openai.chat.completions.create({
+        messages: [{ content: prompt, role: 'user' }],
         model: this.model,
-        messages: [{ role: 'user', content: prompt }],
       }),
       this.requestTimeout,
     );

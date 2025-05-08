@@ -1,7 +1,7 @@
 export async function promiseWithTimeout<T>(
   task: Promise<T>,
   timeoutInMs: number,
-  errorMessage = "The operation timed out",
+  errorMessage = 'The operation timed out',
 ): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
