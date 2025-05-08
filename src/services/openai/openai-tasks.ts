@@ -1,15 +1,10 @@
-import config from '#config.js';
 import { OpenAIService } from '#services/openai/openai.service.js';
-import { retryWithBackoff } from '#utils/retry-utils.js';
-import pLimit from 'p-limit';
 
 export class OpenAITasks {
-  private limiter: ReturnType<typeof pLimit>;
   private openaiService: OpenAIService;
 
   constructor() {
     this.openaiService = new OpenAIService();
-    this.limiter = pLimit(config.maxConcurrency);
   }
 
   async analyzeSentiment(content: string) {
@@ -21,24 +16,16 @@ export class OpenAITasks {
       TEXT TO ANALYZE:
       ${content}
     `;
-    try {
-      const result = await this.limiter(() =>
-        retryWithBackoff(async () => {
-          const sentiment = await this.openaiService.runRawResponse(prompt, 'neutral');
-          const normalizedSentiment = sentiment.trim().toLowerCase();
-          if (!['negative', 'neutral', 'positive'].includes(normalizedSentiment)) {
-            console.warn(`Invalid sentiment received: "${normalizedSentiment}", using "neutral"`);
-            return 'neutral';
-          }
-          return normalizedSentiment;
-        }),
-      );
 
-      return result;
-    } catch (error) {
-      console.error('Sentiment analysis error:', error);
-      throw error;
+    const sentiment = await this.openaiService.runRawResponse(prompt, 'neutral');
+    const normalizedSentiment = sentiment.trim().toLowerCase();
+
+    if (!['negative', 'neutral', 'positive'].includes(normalizedSentiment)) {
+      console.warn(`Invalid sentiment received: "${normalizedSentiment}", using "neutral"`);
+      return 'neutral';
     }
+
+    return normalizedSentiment;
   }
 
   async categorize(content: string) {
@@ -53,20 +40,18 @@ export class OpenAITasks {
       TEXT TO CATEGORIZE:
       ${content}
     `;
-    const result = await this.limiter(() =>
-      retryWithBackoff(async () => {
-        const rawResponse = await this.openaiService.runJsonResponse<string[]>(prompt, []);
-        return rawResponse;
-      }),
-    );
+
+    const result = await this.openaiService.runJsonResponse<string[]>(prompt, []);
+
     if (!Array.isArray(result) || result.length === 0 || result.length > 5) {
       console.warn('Invalid category format, using default value');
       return ['Uncategorized'];
     }
+
     return result;
   }
 
-  extractKeywords = async (content: string) => {
+  async extractKeywords(content: string) {
     const prompt = `
       +++Reasoning
       +++OutputFormat(JSON)
@@ -80,22 +65,17 @@ export class OpenAITasks {
       TEXT TO ANALYZE:
       ${content}
     `;
+
     const defaultResult = { primary: '', secondary: [] };
-    const result = await this.limiter(() =>
-      retryWithBackoff(async () => {
-        const rawResponse = await this.openaiService.runJsonResponse<{ primary: string; secondary: string[] }>(
-          prompt,
-          defaultResult,
-        );
-        return rawResponse;
-      }),
-    );
+    const result = await this.openaiService.runJsonResponse(prompt, defaultResult);
+
     if (!result.primary || !Array.isArray(result.secondary)) {
       console.warn('Invalid keyword format, using default value');
       return defaultResult;
     }
+
     return result;
-  };
+  }
 
   async summarize(content: string) {
     const prompt = `
@@ -106,18 +86,7 @@ export class OpenAITasks {
       TEXT TO SUMMARIZE:
       ${content}
     `;
-    try {
-      const result = await this.limiter(() =>
-        retryWithBackoff(async () => {
-          const rawResponse = await this.openaiService.runRawResponse(prompt, '');
-          return rawResponse;
-        }),
-      );
 
-      return result;
-    } catch (error) {
-      console.error('Summarization error:', error);
-      throw error;
-    }
+    return this.openaiService.runRawResponse(prompt, '');
   }
 }

@@ -10,7 +10,7 @@ const envSchema = z.object({
   MAX_TPM: z.string().default('10000'),
   NODE_ENV: z.enum(['development', 'production']).default('development'),
   OPENAI_API_KEY: z.string(),
-  OPENAI_MODEL: z.string().default('gpt-3.5-turbo'),
+  OPENAI_MODEL: z.string().default('o3-mini'),
   PORT: z.coerce.number().default(3000),
   REQUEST_TIMEOUT: z.string().default('30000'),
 });
@@ -27,7 +27,7 @@ export const config = {
   apiKey: parsedEnv.OPENAI_API_KEY,
   maxConcurrency: parseInt(parsedEnv.MAX_CONCURRENCY, 10),
   maxRPM: parseInt(parsedEnv.MAX_RPM, 10),
-  maxTPM: parseInt(parsedEnv.MAX_TPM, 10),
+  maxTPM: parseInt(parsedEnv.MAX_TPM, 10000),
   model: parsedEnv.OPENAI_MODEL,
   nodeEnv: parsedEnv.NODE_ENV,
   port: parsedEnv.PORT,
