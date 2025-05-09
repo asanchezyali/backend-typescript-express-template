@@ -6,35 +6,43 @@ Esta API utiliza modelos de lenguaje (LLMs) para analizar textos, realizando cua
 - [Enfoque y Decisiones de Diseño](#enfoque-y-decisiones-de-diseño)
 - [Características](#características)
 - [Requisitos](#requisitos)
-- [Instalación](#instalación)
-- [Uso](#uso)
+- [Instalación y Configuración](#instalación-y-configuración)
 - [Arquitectura](#arquitectura)
-- [Gestión de la Naturaleza No Determinista de los LLMs](#gestión-de-la-naturaleza-no-determinista-de-los-llms)
-- [Pruebas](#pruebas)
-- [Escalabilidad y Mejoras Futuras](#escalabilidad-y-mejoras-futuras)
+- [Gestión de la No Determinación en LLMs](#gestión-de-la-no-determinación-en-llms)
+- [Pruebas y Rendimiento](#pruebas-y-rendimiento)
+- [Consideraciones de Escalabilidad](#consideraciones-de-escalabilidad)
 
 ## Enfoque y Decisiones de Diseño
 
-Al enfrentar este desafío técnico, tomé decisiones específicas para crear una API robusta y escalable:
+Al abordar este desafío técnico, implementé una arquitectura que optimiza la fiabilidad, mantenibilidad y escalabilidad:
 
-1. **División en tareas discretas**: Separé cada operación de análisis (resumen, categorización, etc.) en tareas independientes con prompts específicos para mejorar la precisión y gestionar la complejidad. Esto facilita el mantenimiento y permite la ejecución en paralelo.
+### Separación de responsabilidades
 
-2. **Gestión de límites específicos**: Implementé validación explícita para asegurar que:
-   - La categorización siempre devuelve un máximo de 5 categorías
-   - La palabra clave primaria es una cadena única
-   - Las palabras clave secundarias son un array de cadenas
-   - El análisis de sentimiento devuelve específicamente "positive", "negative" o "neutral"
+Descompuse el problema en componentes modulares siguiendo el principio de responsabilidad única:
 
-3. **Arquitectura en capas**: Elegí una arquitectura que separa claramente las responsabilidades:
-   - Controladores: Manejan las solicitudes HTTP
-   - Servicios: Contienen la lógica de negocio
-   - Utilidades: Proporcionan funciones auxiliares
+- **Controladores**: Gestión de peticiones HTTP y respuestas
+- **Servicios**: Encapsulación de la lógica de negocio
+- **Tareas específicas de LLM**: Prompts especializados para cada operación de análisis
+- **Servicio OpenAI**: Abstraje las interacciones con la API de OpenAI con gestión de límites
 
-4. **Procesamiento asíncrono paralelo**: Utilizo `Promise.all` para ejecutar las cuatro operaciones de análisis en paralelo, reduciendo el tiempo de respuesta total.
+Esta separación permite el mantenimiento independiente de cada componente y facilita la evolución del sistema.
 
-5. **Manejo de errores robusto**: Implementé una estrategia de "fail gracefully" que proporciona resultados parciales cuando es posible, en lugar de fallar completamente cuando una subtarea falla.
+### Optimización de rendimiento
 
-Estas decisiones me permitieron construir una API que no solo cumple con los requisitos funcionales, sino que también es resistente a errores, eficiente en el uso de recursos y fácil de mantener y extender.
+Identifiqué que las llamadas a LLM constituyen el principal cuello de botella, por lo que implementé:
+
+- **Procesamiento paralelo**: Las cuatro operaciones de análisis se ejecutan concurrentemente mediante `Promise.allSettled`.
+- **Sistema de rate limiting en tres capas**: Control de concurrencia, solicitudes por minuto (RPM) y tokens por minuto (TPM).
+- **Backoff exponencial**: Implementé reintentos inteligentes para gestionar errores transitorios.
+
+### Garantía de resultados consistentes
+
+Para asegurar que las respuestas cumplan con los requisitos específicos del proyecto:
+
+- **Categorización**: Limité el resultado a un máximo de 5 categorías mediante validación explícita
+- **Palabra clave primaria**: Garanticé que sea una cadena mediante tipado estricto y validación
+- **Palabras clave secundarias**: Implementé validación para asegurar un array de strings
+- **Análisis de sentimiento**: Normalicé las respuestas a exclusivamente "positive", "negative" o "neutral"
 
 ## Características
 
@@ -49,60 +57,75 @@ Estas decisiones me permitieron construir una API que no solo cumple con los req
 
 ## Requisitos
 
-- Node.js v22 o superior
-- NPM v10 o superior
+- Node.js v22+
+- NPM v10+
 - Clave de API de OpenAI
 
-## Instalación
+## Instalación y Configuración
 
-1. Clonar el repositorio:
+1. **Clonar el repositorio**:
    ```bash
    git clone https://github.com/tu-usuario/growthx-app.git
    cd growthx-app
    ```
 
-2. Instalar dependencias:
+2. **Instalar dependencias**:
    ```bash
    npm install
    ```
 
-3. Crear archivo de configuración `.env.local`:
+3. **Configurar variables de entorno** (`.env.local`):
    ```
+   # Obligatorio
    OPENAI_API_KEY=tu-clave-api-openai
+
+   # Opcional - Configuración del servidor
    PORT=3000
    NODE_ENV=development
+
+   # Opcional - Configuración de OpenAI
+   OPENAI_MODEL=o3-mini
+   REQUEST_TIMEOUT=30000
+
+   # Opcional - Rate Limiting
+   MAX_CONCURRENCY=8
+   MAX_RPM=100
+   MAX_TPM=10000
    ```
 
-4. Iniciar el servidor de desarrollo:
+4. **Iniciar el servidor**:
    ```bash
+   # Desarrollo
    npm run dev
+   
+   # Producción
+   npm run build
+   npm start
    ```
 
-La API estará disponible en `http://localhost:3000`. La documentación Swagger se puede acceder en `http://localhost:3000/api-docs`.
+La API estará disponible en `http://localhost:3000` y la documentación Swagger en `http://localhost:3000/api-docs`.
 
-## Uso
+## Uso de la API
 
 ### Endpoint de Análisis
 
-```
+```http
 POST /api/analyze
-```
+Content-Type: application/json
 
-**Body:**
-```json
 {
-  "title": "Título del documento (opcional)",
-  "content": "Contenido del texto a analizar"
+  "title": "Machine Learning Fundamentals",
+  "content": "El texto completo para analizar..."
 }
 ```
 
-**Respuesta:**
+**Respuesta**:
 ```json
 {
   "status": "success",
   "data": {
     "summary": "Resumen conciso del contenido...",
-    "categories": ["Educación", "Tecnología", "Inteligencia Artificial"],
+    "categories": ["educación", "tecnología", "inteligencia artificial"],
     "primaryKeyword": "aprendizaje automático",
     "secondaryKeywords": ["algoritmos", "redes neuronales", "datos"],
     "sentiment": "positive"
@@ -110,24 +133,24 @@ POST /api/analyze
 }
 ```
 
-### Endpoint de Salud
+### Endpoint de Estado
 
-```
+```http
 GET /api/health
 ```
 
-**Respuesta:**
+**Respuesta**:
 ```json
 {
   "status": "ok",
-  "model": "gpt-3.5-turbo",
-  "timestamp": "2025-05-08T22:24:42Z"
+  "model": "o3-mini",
+  "timestamp": "2023-05-08T22:24:42Z"
 }
 ```
 
 ## Arquitectura
 
-La aplicación sigue un patrón de arquitectura en capas que facilita el mantenimiento y la escalabilidad. A continuación se muestra el diagrama de la arquitectura general:
+La aplicación sigue una arquitectura en capas que optimiza la separación de responsabilidades y facilita las modificaciones:
 
 ```mermaid
 graph TD
@@ -169,9 +192,9 @@ graph TD
     style TK fill:#f9c,stroke:#333
 ```
 
-### Diagrama de Secuencia
+### Flujo de Operaciones
 
-El siguiente diagrama ilustra el flujo de procesamiento de una solicitud de análisis de texto:
+El siguiente diagrama ilustra el flujo de procesamiento para una solicitud de análisis:
 
 ```mermaid
 sequenceDiagram
@@ -318,10 +341,14 @@ Los modelos de lenguaje grande (LLMs) son inherentemente no deterministas, lo qu
 
 ### 1. Técnicas de prompting avanzadas
 
-Utilizo "Prompt Decorators", una técnica avanzada que mejora significativamente la consistencia de las respuestas. A continuación se muestran ejemplos reales de los prompts utilizados en cada tarea de análisis:
+Utilizo "Prompt Decorators", una nueva técnica ([Ver](https://synaptiai.github.io/prompt-decorators/),
+[Medium](https://medium.com/agileinsider/reasoning-depth-comprehensive-a-first-principles-approach-to-enhanced-llm-interactions-7052cbb3e2ea))
+que parece mejora significativamente la consistencia de las respuestas (es necesario hacer más pruebas determinar su
+efectividad, pero hasta el momento parece acogida). A continuación se muestran ejemplos reales de los
+prompts utilizados en cada tarea de análisis:
 
 ```typescript
-// Análisis de sentimiento
+// Ejemplo: Análisis de sentimiento con decoradores
 const sentimentPrompt = `
   +++OutputFormat(format=single-word, allowed=["positive", "negative", "neutral"])
   +++Constraint(type=response-length, max=1)
@@ -333,74 +360,38 @@ const sentimentPrompt = `
   TEXT TO ANALYZE:
   ${sanitizedContent}
 `;
-
-// Categorización
-const categorizePrompt = `
-  +++OutputFormat(format=json, schema=array)
-  +++Constraint(type=array-length, min=1, max=5)
-  +++ItemConstraint(type=format, format=lowercase)
-  +++RobustParsing(recovery=true)
-  +++SecurityBoundary(enforce=strict)
-  Identify 1-5 relevant categories for this text.
-  Return only a JSON array of lowercase category strings.
-  Format: ["category1", "category2", ...]
-  No explanations or additional text.
-
-  TEXT TO CATEGORIZE:
-  ${sanitizedContent}
-`;
-
-// Extracción de palabras clave
-const keywordsPrompt = `
-  +++OutputFormat(format=json, schema=object)
-  +++Schema(type=object, properties={
-    primary: {type: string, description: "Main topic keyword"},
-    secondary: {type: array, items: {type: string}, minItems: 1, maxItems: 5}
-  })
-  +++ErrorHandling(strategy=graceful-fallback)
-  +++SecurityBoundary(enforce=strict)
-  Extract one primary keyword (main topic) and 1-5 secondary keywords from this text.
-  Return only this JSON format:
-  {
-    "primary": "main keyword",
-    "secondary": ["keyword1", "keyword2", ...]
-  }
-
-  TEXT TO ANALYZE:
-  ${sanitizedContent}
-`;
-
-// Resumen
-const summarizePrompt = `
-  +++Concise(level=high)
-  +++TL;DR(style=informative)
-  +++Constraint(type=focus, value=essential-information)
-  +++OutputFormat(format=plain-text)
-  +++SecurityBoundary(enforce=strict)
-  Create a concise summary capturing the main points of this text.
-  Keep it brief, coherent, and focused on essential information.
-
-  TEXT TO SUMMARIZE:
-  ${sanitizedContent}
-`;
 ```
 
-Estos decoradores proporcionan instrucciones explícitas que generan respuestas más predecibles y estructuradas. Las ventajas de este enfoque incluyen:
+Cada decorador resuelve un problema específico:
 
-- **Control preciso del formato**: Decoradores como `+++OutputFormat` especifican exactamente el formato esperado
-- **Validación integrada**: Restricciones como `+++Constraint` garantizan que se cumplan los límites requeridos
-- **Manejo de errores robusto**: Decoradores como `+++ErrorHandling` definen estrategias para casos excepcionales
-- **Seguridad mejorada**: `+++SecurityBoundary` proporciona protección contra ataques de inyección de prompt
-- **Estructura semántica**: Decoradores como `+++Concise` y `+++TL;DR` orientan el estilo y tono de la respuesta
+- **+++OutputFormat**: Define explícitamente el formato de respuesta esperado
+- **+++Constraint**: Establece límites precisos para la respuesta
+- **+++ErrorHandling**: Define comportamiento para casos excepcionales
+- **+++SecurityBoundary**: Mejora la resistencia contra ataques de inyección
 
-Además, implementamos un proceso de sanitización para prevenir ataques de inyección de prompt:
+### 2. Validación y Normalización Post-Procesamiento
+
+Implementé validación rigurosa para garantizar que las respuestas cumplan con los requisitos especificados:
+
+```typescript
+// Normalización de sentimiento
+const normalizedSentiment = sentiment.trim().toLowerCase();
+if (!['negative', 'neutral', 'positive'].includes(normalizedSentiment)) {
+  console.warn(`Sentimiento no válido recibido: "${normalizedSentiment}", usando "neutral"`);
+  return 'neutral';
+}
+```
+
+### 3. Protección contra Inyección de Prompt
+
+Implementé técnicas de sanitización para neutralizar posibles ataques de inyección:
 
 ```typescript
 private sanitizeInput(content: string): string {
   // Eliminar decoradores que podrían intentar inyectarse
   let sanitized = content.replace(/\+\+\+\w+(\(.*?\))?/g, '[FILTERED]');
 
-  // Filtrar patrones comunes de ataques de inyección
+  // Filtrar patrones comunes de ataques
   const injectionPatterns = [
     /ignore (previous|above|all) instructions/gi,
     /disregard (previous|above|all) instructions/gi,
@@ -417,28 +408,9 @@ private sanitizeInput(content: string): string {
 }
 ```
 
-### 2. Validación y post-procesamiento
+### 4. Manejo de Errores
 
-Para garantizar que las respuestas cumplan con los requisitos específicos:
-
-```typescript
-// Validación para categorías
-const validateCategories = (categories: unknown): string[] => {
-  if (!Array.isArray(categories)) return ['Uncategorized'];
-  
-  // Garantizar que solo tenemos strings
-  const validCategories = categories
-    .filter(category => typeof category === 'string')
-    .map(category => category.trim());
-    
-  // Limitar a máximo 5 categorías
-  return validCategories.slice(0, 5);
-};
-```
-
-### 3. Manejo de errores y resultados fallidos
-
-Implementé una estrategia que proporciona valores predeterminados significativos cuando una operación falla:
+Diseñé un sistema que proporciona respuestas significativas incluso cuando ocurren fallos:
 
 ```typescript
 // En ContentAnalyzerService
@@ -449,17 +421,17 @@ const tasks = {
   summary: this.openaiTasks.summarize(content).catch(() => ''),
 };
 
-// Usar Promise.allSettled para obtener resultados incluso si algunas tareas fallan
+// Usando Promise.allSettled para garantizar respuestas incluso con fallos parciales
 const results = await Promise.allSettled([tasks.categories, tasks.summary, tasks.keywords, tasks.sentiment]);
 ```
 
-Esta combinación de técnicas de prompting avanzadas, validación rigurosa y manejo elegante de errores permite que la API genere resultados consistentes y predecibles a pesar de la naturaleza no determinista de los LLMs.
+Esta combinación de técnicas convierte la naturaleza impredecible de los LLMs en un sistema confiable y consistente para análisis de texto.
 
-## Pruebas
+## Pruebas y Rendimiento
 
 ### Pruebas End-to-End
 
-Las pruebas e2e verifican el funcionamiento completo de la API:
+Implementé pruebas automatizadas que verifican el funcionamiento completo de la API:
 
 ```bash
 npm run test:run
@@ -493,19 +465,14 @@ graph TD
     style Mock fill:#c9f,stroke:#333
 ```
 
-### Pruebas de Carga
+### Pruebas de Carga y Límites de OpenAI
 
-Implementamos pruebas de carga utilizando `autocannon` para medir el rendimiento bajo diferentes niveles de carga:
+Un aspecto crítico del sistema es su comportamiento bajo carga. Implementé pruebas específicas con autocannon para medir el rendimiento:
 
 ```bash
-# Prueba con carga ligera (5 conexiones concurrentes)
-npm run load-test:light
-
-# Prueba con carga media (25 conexiones concurrentes)
-npm run load-test:medium
-
-# Prueba con carga alta (50 conexiones concurrentes)
-npm run load-test:heavy
+npm run load-test:light    # 5 conexiones concurrentes
+npm run load-test:medium   # 25 conexiones concurrentes
+npm run load-test:heavy    # 50 conexiones concurrentes
 ```
 
 Ejemplo de resultados de prueba de carga:
@@ -519,19 +486,29 @@ Ejemplo de resultados de prueba de carga:
 | Respuestas exitosas (2xx) | 10590 |
 | Respuestas con error      | 0     |
 
-Estos resultados muestran que la API puede manejar un volumen significativo de solicitudes con tiempos de respuesta bajos, incluso con las limitaciones de tasa de la API de OpenAI.
+La API mantuvo un 100% de respuestas exitosas gracias al sistema de manejo de errores y reintentos implementado. Internamente , el sistema de rate limiting y la gestión de concurrencia aseguraron que las solicitudes no excedieran los límites impuestos por OpenAI.
 
-## Escalabilidad y Mejoras Futuras
+#### Límites de Concurrencia en OpenAI
 
-El diseño actual se puede expandir en varias direcciones:
+Hice una breve investigación durante el desarrollo y encontré un límite crítico de concurrencia en la API de OpenAI:
 
-### 1. Caché para resultados frecuentes
+- Los planes premium están limitados a aproximadamente **8 solicitudes concurrentes**
+- Solicitudes que exceden este límite experimentan un incremento significativo en latencia
+- Este límite es especialmente restrictivo para operaciones que pueden tardar 10-40 segundos
 
-Implementación de una capa de caché utilizando Redis para almacenar resultados de análisis frecuentes, reduciendo llamadas a la API de OpenAI.
+Para abordar esta restricción, implementé:
 
-### 2. Procesamiento por lotes para documentos grandes
+1. **Control de concurrencia**: Limitación a 8 solicitudes paralelas con `p-limit`
+2. **Rate limiting multi-nivel**: Implementación de límites tanto en RPM como en TPM
+3. **Estrategia de backoff exponencial**: Reintentos inteligentes cuando se detectan límites
 
-Un desafío importante cuando se trabaja con LLMs es el manejo de textos extensos que exceden los límites de contexto del modelo (4K-8K tokens para modelos como GPT-3.5 Turbo). Para abordar este problema, implementamos una técnica de fragmentación (chunking) que permite procesar documentos de cualquier longitud:
+## Consideraciones de Escalabilidad
+
+La arquitectura fue diseñada con escalabilidad en mente. A continuación, presento algunas estrategias clave para escalar el sistema a casos de uso empresariales:
+
+### 1. Procesamiento de Documentos Extensos
+
+Se puede dividir el contenido extenso en fragmentos más pequeños para su análisis. Esto es especialmente útil para documentos largos que superan los límites de tokens de OpenAI.
 
 ```typescript
 function splitIntoChunks(text: string, chunkSize: number = 4000): string[] {
@@ -765,10 +742,6 @@ graph TD
     Worker2 --> OpenAI
     WorkerN --> OpenAI
     
-    API1 --> Metrics[Sistema de Métricas]
-    API2 --> Metrics
-    API3 --> Metrics
-    
     style Client fill:#9cf,stroke:#333
     style LB fill:#fc9,stroke:#333
     style API1 fill:#f9c,stroke:#333
@@ -780,30 +753,21 @@ graph TD
     style Worker2 fill:#c9f,stroke:#333
     style WorkerN fill:#c9f,stroke:#333
     style OpenAI fill:#cf9,stroke:#333
-    style Metrics fill:#ccc,stroke:#333
 ```
 
-### 3. Observabilidad mejorada
+Este diseño permitiría:
 
-Integración con sistemas de monitoreo y alertas para rastrear el rendimiento y la disponibilidad de la API.
-
-### 4. Arquitectura distribuida
-
-Evolución hacia una arquitectura de microservicios donde cada operación de análisis (resumen, categorización, etc.)
-podría ejecutarse en servicios separados, permitiendo escalado independiente.
-
-### 5. Soporte para más fuentes de documentos
-
-Ampliación para procesar diferentes formatos (PDF, Markdown, HTML) mediante una capa de preprocesamiento.
+- **Escalado horizontal**: Aumento de capacidad mediante instancias adicionales
+- **Procesamiento asíncrono**: Manejo de tareas largas mediante colas de trabajo
+- **Optimización de costos**: Reducción de llamadas a OpenAI mediante caché
+- **Resistencia a fallos**: Continuidad de servicio incluso ante fallos de componentes individuales
 
 ---
 
-## Contribuciones
+## Implementaciones Futuras
 
-Este proyecto fue desarrollado como una prueba técnica para GrowthX. Para contribuir, por favor:
-
-1. Haga fork del repositorio
-2. Cree una rama para su característica (`git checkout -b feature/amazing-feature`)
-3. Haga commit de sus cambios (`git commit -m 'Add some amazing feature'`)
-4. Push a la rama (`git push origin feature/amazing-feature`)
-5. Abra un Pull Request
+1. **Sistema de caché inteligente**: Almacenamiento de análisis frecuentes para reducir latencia y costos
+2. **Soporte para múltiples formatos**: Preprocesamiento para PDF, Markdown y HTML
+3. **Panel de observabilidad**: Métricas detalladas de rendimiento y uso
+4. **Adaptadores para modelos alternativos**: Compatibilidad con Claude, Llama 2 y otros LLMs
+5. **API de embeddings**: Búsqueda semántica y clustering de documentos similares
