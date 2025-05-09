@@ -531,7 +531,7 @@ function splitIntoChunks(text: string, chunkSize: number = 4000): string[] {
 }
 ```
 
-This technique divides the text into smaller chunks respecting natural paragraph boundaries, which preserves local context. Then we apply specific strategies for each type of analysis:
+This technique divides the text into smaller chunks respecting natural paragraph boundaries, which preserves local context. Then we could apply specific strategies for each type of analysis:
 
 #### Application to analysis tasks
 
