@@ -1,5 +1,6 @@
-import { AnalyzeController } from '#controllers/analyze.controller.js';
 import { Router } from 'express';
+
+import { AnalyzeController } from '../controllers/analyze.controller.js';
 
 const analyzeRouter = Router();
 

@@ -82,51 +82,17 @@ async function runLoadTest(connections = 10, duration = 10, pipelining = 1, time
     ],
     timeout,
     url: URL,
-  });
-
-  // Print progress to console
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  if (instance && typeof instance.track === 'function') {
-    instance.track(instance, { renderProgressBar: true });
-  }
-
-  // When the test finishes, print results
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  if (instance && typeof instance.on === 'function') {
-    instance.on('done', (results) => {
-      printResult(results);
-
-      // Save results to JSON file
-      const resultsFolder = join(process.cwd(), 'results');
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const resultsPath = join(resultsFolder, `analyze-load-test-${timestamp}.json`);
-
-      // Create results folder if it doesn't exist
-      void import('node:fs').then(({ promises: fs }) => {
-        void fs
-          .mkdir(resultsFolder, { recursive: true })
-          .then(() => fs.writeFile(resultsPath, JSON.stringify(results, null, 2)))
-          .then(() => {
-            console.log(`Results saved to ${resultsPath}`);
-          })
-          .catch((err: unknown) => {
-            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-            console.error(`Error saving results: ${errorMessage}`);
-          });
-      });
-    });
-  }
-
-  return new Promise<void>((resolve) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (instance && typeof instance.on === 'function') {
-      instance.on('done', () => {
-        resolve();
-      });
+  }, (err, result) => {
+    if (err) {
+      console.error('Autocannon error:', err);
     } else {
-      resolve();
+      printResult(result as any);
     }
   });
+
+  // Remove .track and .on usage
+  // Return a resolved promise immediately
+  return Promise.resolve();
 }
 
 export { runLoadTest };

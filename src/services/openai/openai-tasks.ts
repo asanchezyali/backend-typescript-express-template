@@ -1,4 +1,4 @@
-import { OpenAIService } from '#services/openai/openai.service.js';
+import { OpenAIService } from './openai.service.js';
 
 export interface KeywordResult {
   primary: string;

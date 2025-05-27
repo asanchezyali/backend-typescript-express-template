@@ -168,10 +168,8 @@ async function runTests(): Promise<void> {
 
       try {
         // Run the load test with the selected configuration
-
         const results = await new Promise((resolve) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-          const test = autocannon({
+          const instance = autocannon({
             body: JSON.stringify({
               content:
                 'This is a sample content for load testing the analyze endpoint. It needs to be long enough to be meaningful for analysis.',
@@ -186,27 +184,21 @@ async function runTests(): Promise<void> {
             pipelining: selectedConfig.pipelining,
             timeout: 30,
             url: `http://localhost:${String(PORT)}/api/analyze`,
-          });
-
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint.no-unsafe-call
-          if (test && typeof test.track === 'function') {
-            test.track(test, { renderProgressBar: true });
-          }
-
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint.no-unsafe-call
-          if (test && typeof test.on === 'function') {
-            test.on('done', (result) => {
+          }, (err, result) => {
+            if (err) {
+              console.error('Autocannon error:', err);
+              resolve(undefined);
+            } else {
               resolve(result);
-            });
-          }
+            }
+          });
         });
 
         // Print results to console
-        // eslint-disable-next-line @typescript-eslint.no-unsafe-argument
-        printResult(results);
+        printResult(results as any);
 
         // Generate HTML report
-        const reportPath = await generateHTMLReport(results, selectedConfig);
+        const reportPath = await generateHTMLReport(results as any, selectedConfig);
         console.log(`HTML report generated: ${reportPath}`);
 
         // Create a simple server to view the report

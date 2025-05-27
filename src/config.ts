@@ -5,6 +5,19 @@ import { z } from 'zod';
 dotenv.config({ path: resolve(process.cwd(), '.env.local') });
 
 const envSchema = z.object({
+  DB_HOST: z.string(),
+  DB_NAME: z.string(),
+  DB_PASSWORD: z.string(),
+  DB_PORT: z.coerce.number().default(3306),
+  DB_USER: z.string(),
+  EMAIL_HOST: z.string().default('smtp.gmail.com'),
+  EMAIL_PASSWORD: z.string(),
+  EMAIL_PORT: z.coerce.number().default(587),
+  EMAIL_USER: z.string(),
+  JWT_EXPIRES_IN: z.string().default('1h'),
+  JWT_REFRESH_EXPIRE_IN: z.string().default('7d'),
+  JWT_REFRESH_SECRET: z.string(),
+  JWT_SECRET: z.string(),
   MAX_CONCURRENCY: z.string().default('8'),
   MAX_RPM: z.string().default('100'),
   MAX_TPM: z.string().default('10000'),
@@ -24,12 +37,25 @@ if (!env.success) {
 const parsedEnv = env.data;
 
 export const config = {
-  apiKey: parsedEnv.OPENAI_API_KEY,
+  dbHost: parsedEnv.DB_HOST,
+  dbName: parsedEnv.DB_NAME,
+  dbPassword: parsedEnv.DB_PASSWORD,
+  dbPort: parsedEnv.DB_PORT,
+  dbUser: parsedEnv.DB_USER,
+  emailHost: parsedEnv.EMAIL_HOST,
+  emailPassword: parsedEnv.EMAIL_PASSWORD,
+  emailPort: parsedEnv.EMAIL_PORT,
+  emailUser: parsedEnv.EMAIL_USER,
+  jwtExpiresIn: parsedEnv.JWT_EXPIRES_IN,
+  jwtRefreshExpireIn: parsedEnv.JWT_REFRESH_EXPIRE_IN,
+  jwtRefreshSecret: parsedEnv.JWT_REFRESH_SECRET,
+  jwtSecret: parsedEnv.JWT_SECRET,
   maxConcurrency: parseInt(parsedEnv.MAX_CONCURRENCY, 10),
   maxRPM: parseInt(parsedEnv.MAX_RPM, 10),
   maxTPM: parseInt(parsedEnv.MAX_TPM, 10000),
   model: parsedEnv.OPENAI_MODEL,
   nodeEnv: parsedEnv.NODE_ENV,
+  openaiApiKey: parsedEnv.OPENAI_API_KEY,
   port: parsedEnv.PORT,
   requestTimeout: parseInt(parsedEnv.REQUEST_TIMEOUT, 10),
 };

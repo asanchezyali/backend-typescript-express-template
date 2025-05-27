@@ -22,6 +22,14 @@ export default tseslint.config(
   },
   perfectionist.configs['recommended-natural'],
   {
+    rules: {
+      'perfectionist/sort-objects': 'off',
+      'perfectionist/sort-imports': 'off',
+      'perfectionist/sort-interfaces': 'off',
+      'perfectionist/sort-class-members': 'off',
+    },
+  },
+  {
     files: ['**/*.test.ts', '**/*.spec.ts'],
     plugins: {
       vitest,

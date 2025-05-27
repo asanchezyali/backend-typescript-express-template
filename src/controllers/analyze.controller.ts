@@ -1,7 +1,8 @@
-import config from '#config.js';
-import { ContentAnalyzerService } from '#services/content-analyzer.service.js';
-import { AnalysisResponse, AnalyzeRequest, ErrorResponse } from '#types/api.types.js';
 import { Request, Response } from 'express';
+
+import config from '../config.js';
+import { ContentAnalyzerService } from '../services/content-analyzer.service.js';
+import { AnalysisResponse, AnalyzeRequest, ErrorResponse } from '../types/api.types.js';
 
 const ERROR_MESSAGES = {
   MISSING_CONTENT: 'Missing required field: content',

@@ -11,6 +11,7 @@ This API uses large language models (LLMs) to analyze texts, performing four key
 - [Managing Non-Determinism in LLMs](#managing-non-determinism-in-llms)
 - [Testing and Performance](#testing-and-performance)
 - [Scalability Considerations](#scalability-considerations)
+- [Docker Usage](#docker-usage)
 
 ## Approach and Design Decisions
 
@@ -770,3 +771,26 @@ This design would allow:
 3. **Observability dashboard**: Detailed performance and usage metrics
 4. **Adapters for alternative models**: Compatibility with Claude, Llama 2, and other LLMs
 5. **Embeddings API**: Semantic search and clustering of similar documents
+
+## Docker Usage
+
+To run the backend and MySQL database using Docker Compose:
+
+1. Copy the example environment file and edit as needed:
+   ```bash
+   cp .env.docker .env.docker
+   # Edit .env.docker to set your OpenAI API key and MySQL credentials
+   ```
+
+2. Build and start the services:
+   ```bash
+   docker-compose up --build
+   ```
+
+- The backend will be available at `http://localhost:3000`.
+- MySQL will be available at `localhost:3306` (see `.env.docker` for credentials).
+
+To stop and remove containers, networks, and volumes:
+```bash
+docker-compose down -v
+```

@@ -1,11 +1,12 @@
-import config from '#config.js';
-import { safeJsonParse } from '#utils/json-utils.js';
-import { retryWithBackoff } from '#utils/retry-utils.js';
-import { promiseWithTimeout } from '#utils/timeout-utils.js';
 import { OpenAI } from 'openai';
 import pLimit from 'p-limit';
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 import { encoding_for_model, TiktokenModel } from 'tiktoken';
+
+import config from '../../config.js';
+import { safeJsonParse } from '../../utils/json-utils.js';
+import { retryWithBackoff } from '../../utils/retry-utils.js';
+import { promiseWithTimeout } from '../../utils/timeout-utils.js';
 
 interface RateLimiterError extends Error {
   msBeforeNext: number;
@@ -22,7 +23,7 @@ export class OpenAIService {
 
   constructor() {
     this.openai = new OpenAI({
-      apiKey: config.apiKey,
+      apiKey: config.openaiApiKey,
     });
     this.model = config.model;
     this.requestTimeout = config.requestTimeout;

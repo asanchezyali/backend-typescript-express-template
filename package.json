@@ -1,11 +1,11 @@
 {
-  "name": "growthx-app",
+  "name": "backend-typescript-express-template",
   "version": "1.0.0",
   "description": "LLM Text Analysis API",
   "type": "module",
   "scripts": {
     "dev": "tsx --watch --env-file .env.local src/server.ts",
-    "start": "node --env-file .env dist/server.js",
+    "start": "node --env-file .env dist/src/server.js",
     "build": "tsc -p tsconfig.build.json",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
@@ -16,7 +16,6 @@
     "test:run": "vitest --run",
     "test:ui": "vitest --ui",
     "coverage": "vitest run --coverage",
-    "prepare": "husky",
     "load-test": "tsx src/tests/load/analyze-load-runner.ts",
     "load-test:light": "tsx src/tests/load/analyze-load-runner.ts light-load",
     "load-test:medium": "tsx src/tests/load/analyze-load-runner.ts medium-load",
@@ -26,15 +25,20 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
+    "@types/jsonwebtoken": "^9.0.9",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
     "openai": "^4.97.0",
     "rate-limiter-flexible": "^7.1.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "tiktoken": "^1.0.21",
+    "typeorm": "^0.3.24",
     "zod": "^3.24.4"
   },
   "devDependencies": {

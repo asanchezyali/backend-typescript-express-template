@@ -65,7 +65,7 @@ vi.mock('#config.js', () => ({
   },
 }));
 
-import { OpenAIService } from '#services/openai/openai.service.js';
+import { OpenAIService } from '../services/openai/openai.service.js';
 
 describe('OpenAIService', () => {
   let service: OpenAIService;

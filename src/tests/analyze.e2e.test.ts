@@ -1,7 +1,7 @@
 process.env.OPENAI_API_KEY = 'test-api-key';
 process.env.NODE_ENV = 'test';
 
-import app from '#app.js';
+import app from '../app.js';
 import supertest from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 

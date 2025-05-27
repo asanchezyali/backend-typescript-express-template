@@ -3,8 +3,11 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": ["src/**/*"],
-  "exclude": ["src/tests/load/**/*", "src/types/autocannon.types.ts"]
+  "exclude": ["src/tests/load/**/*", "src/types/autocannon.types.ts"],
+  "build": "tsc -p tsconfig.build.json"
 }
