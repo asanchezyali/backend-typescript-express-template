@@ -38,6 +38,7 @@ export default tseslint.config(
       ...vitest.configs.recommended.rules,
       '@typescript-eslint/unbound-method': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'error',
+      '@typescript-eslint/no-unsafe-assignment': 'error'
     },
   },
 );
